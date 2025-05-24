@@ -1,6 +1,7 @@
 from typing import Optional
 
 import numpy as np
+import optax
 from scipy.special import expit
 from sklearn.base import BaseEstimator, ClassifierMixin
 from sklearn.preprocessing import LabelBinarizer
@@ -222,14 +223,12 @@ class ARDClassifier(BaseEstimator, ClassifierMixin):
         # Add intercept column to X
         X_with_intercept = np.column_stack([np.ones(n_samples), X])
 
-        # Adam optimizer parameters
-        m_mu = np.zeros_like(self.mu_)
-        v_mu = np.zeros_like(self.mu_)
-        m_log_sigma2 = np.zeros_like(self.log_sigma2_)
-        v_log_sigma2 = np.zeros_like(self.log_sigma2_)
-        beta1 = 0.9
-        beta2 = 0.999
-        epsilon = 1e-8
+        # Initialize optax Adam optimizer
+        optimizer = optax.adam(learning_rate=self.learning_rate)
+
+        # Combine parameters for optimization
+        params = {"mu": self.mu_, "log_sigma2": self.log_sigma2_}
+        opt_state = optimizer.init(params)
 
         # Optimization loop
         prev_elbo = -np.inf
@@ -248,33 +247,22 @@ class ARDClassifier(BaseEstimator, ClassifierMixin):
                 self.lambda_,
             )
 
-            # Adam updates
-            t = iteration + 1
+            # Create gradients dict for optax
+            # Note: optax performs minimization, but our gradients are for maximization
+            # so we need to negate them
+            grads = {"mu": -grad_mu, "log_sigma2": -grad_log_sigma2}
 
-            # Update biased first moment estimate
-            m_mu = beta1 * m_mu + (1 - beta1) * grad_mu
-            m_log_sigma2 = beta1 * m_log_sigma2 + (1 - beta1) * grad_log_sigma2
+            # Apply optimizer update
+            updates, opt_state = optimizer.update(grads, opt_state, params)
+            params = optax.apply_updates(params, updates)
 
-            # Update biased second raw moment estimate
-            v_mu = beta2 * v_mu + (1 - beta2) * grad_mu**2
-            v_log_sigma2 = beta2 * v_log_sigma2 + (1 - beta2) * grad_log_sigma2**2
-
-            # Compute bias-corrected estimates
-            m_mu_hat = m_mu / (1 - beta1**t)
-            m_log_sigma2_hat = m_log_sigma2 / (1 - beta1**t)
-            v_mu_hat = v_mu / (1 - beta2**t)
-            v_log_sigma2_hat = v_log_sigma2 / (1 - beta2**t)
-
-            # Update parameters
-            self.mu_ += self.learning_rate * m_mu_hat / (np.sqrt(v_mu_hat) + epsilon)
-            self.log_sigma2_ += (
-                self.learning_rate
-                * m_log_sigma2_hat
-                / (np.sqrt(v_log_sigma2_hat) + epsilon)
-            )
+            # Update instance variables
+            self.mu_ = params["mu"]
+            self.log_sigma2_ = params["log_sigma2"]
 
             # Ensure log_sigma2 doesn't get too small
             self.log_sigma2_ = np.maximum(self.log_sigma2_, -10.0)
+            params["log_sigma2"] = self.log_sigma2_  # Keep params dict in sync
 
             # Update hyperparameters every 10 iterations
             if iteration % 10 == 0:
