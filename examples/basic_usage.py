@@ -75,8 +75,13 @@ def main():
         )
 
     # Count effective features
-    alpha_threshold = np.percentile(clf.alpha_, 80)
-    n_effective = np.sum(clf.alpha_ < alpha_threshold)
+    # Identify relevant features using proper ARD mechanism
+    # ARD assigns high alpha to irrelevant features, low alpha to relevant features
+    mean_alpha = np.mean(clf.alpha_)
+    std_alpha = np.std(clf.alpha_)
+    alpha_threshold = mean_alpha - 0.5 * std_alpha
+    relevant_features = clf.alpha_ < alpha_threshold
+    n_effective: int = np.sum(relevant_features)
     print(f"\n   Effective features: {n_effective}/{X.shape[1]}")
     print(f"   Feature sparsity: {(X.shape[1] - n_effective) / X.shape[1] * 100:.1f}%")
 

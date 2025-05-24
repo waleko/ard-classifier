@@ -69,9 +69,12 @@ def benchmark_comparison():
     ard_train_score = ard_clf.score(X_train, y_train)
     ard_test_score = ard_clf.score(X_test, y_test)
 
-    # Count effective features
-    alpha_threshold = np.percentile(ard_clf.alpha_, 80)
-    n_effective = np.sum(ard_clf.alpha_ < alpha_threshold)
+    # Count effective features using proper ARD mechanism
+    # ARD assigns high alpha to irrelevant features, low alpha to relevant features
+    mean_alpha = np.mean(ard_clf.alpha_)
+    std_alpha = np.std(ard_clf.alpha_)
+    alpha_threshold = mean_alpha - 0.5 * std_alpha
+    n_effective: int = np.sum(ard_clf.alpha_ < alpha_threshold)
 
     print(f"Training time: {ard_time:.3f} seconds")
     print(f"Train accuracy: {ard_train_score:.4f}")
@@ -126,7 +129,7 @@ def benchmark_comparison():
     lr_l1_test_score = lr_l1_clf.score(X_test, y_test)
 
     # Count non-zero coefficients
-    n_nonzero = np.sum(np.abs(lr_l1_clf.coef_[0]) > 1e-6)
+    n_nonzero: int = np.sum(np.abs(lr_l1_clf.coef_[0]) > 1e-6)
 
     print(f"Training time: {lr_l1_time:.3f} seconds")
     print(f"Train accuracy: {lr_l1_train_score:.4f}")
@@ -142,14 +145,20 @@ def benchmark_comparison():
         f"{'Method':<30} {'Train Acc':<10} {'Test Acc':<10} {'Time (s)':<10} {'Sparsity':<10}"
     )
     print("-" * 60)
+    ard_sparsity = (n_features - n_effective) / n_features * 100
+    l1_sparsity = (n_features - n_nonzero) / n_features * 100
+
     print(
-        f"{'ARD (Variational)':<30} {ard_train_score:<10.4f} {ard_test_score:<10.4f} {ard_time:<10.3f} {(n_features - n_effective) / n_features * 100:<10.1f}%"
+        f"{'ARD (Variational)':<30} {ard_train_score:<10.4f} {ard_test_score:<10.4f} "
+        f"{ard_time:<10.3f} {ard_sparsity:<10.1f}%"
     )
     print(
-        f"{'Logistic Regression (L2)':<30} {lr_train_score:<10.4f} {lr_test_score:<10.4f} {lr_time:<10.3f} {'0.0':<10}%"
+        f"{'Logistic Regression (L2)':<30} {lr_train_score:<10.4f} {lr_test_score:<10.4f} "
+        f"{lr_time:<10.3f} {'0.0':<10}%"
     )
     print(
-        f"{'Logistic Regression (L1)':<30} {lr_l1_train_score:<10.4f} {lr_l1_test_score:<10.4f} {lr_l1_time:<10.3f} {(n_features - n_nonzero) / n_features * 100:<10.1f}%"
+        f"{'Logistic Regression (L1)':<30} {lr_l1_train_score:<10.4f} "
+        f"{lr_l1_test_score:<10.4f} {lr_l1_time:<10.3f} {l1_sparsity:<10.1f}%"
     )
 
     # Visualization

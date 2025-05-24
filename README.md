@@ -133,30 +133,32 @@ ARD performance on widely-used high-dimensional datasets from ML research:
 
 | Dataset | Samples×Features | ARD Acc. | LogReg Acc. | L1 Acc. | ARD Features | L1 Features | Overhead |
 |---------|------------------|----------|-------------|---------|--------------|-------------|----------|
-| MNIST Digits (even vs odd) | 1797×64 | 91.1% | 91.5% | 91.7% | 13/64 (20%) | 31/64 (48%) | 5.0× |
-| 20 Newsgroups (1000 features) | 1963×1000 | 95.8% | 94.9% | 95.1% | 200/1000 (20%) | 268/1000 (27%) | 63.9× |
-| Madelon (500 features) | 2600×500 | 57.8% | 55.6% | 57.9% | 100/500 (20%) | 313/500 (63%) | 18.8× |
-| Arrhythmia (279 features) | 452×279 | 75.7% | 73.5% | 75.7% | 56/279 (20%) | 35/279 (13%) | 4.8× |
-| Colon Cancer (2000 genes) | 62×2000 | 73.7% | 73.7% | 73.7% | 400/2000 (20%) | 6/2000 (0.3%) | 7.8× |
-| Synthetic (20/300 informative) | 500×300 | 90.0% | 84.7% | 94.7% | 60/300 (20%) | 19/300 (6%) | 11.8× |
+| MNIST Digits (even vs odd) | 1797×64 | 91.1% | 91.5% | 91.7% | 24/64 (37.5%) | 31/64 (48%) | 120× |
+| 20 Newsgroups (1000 features) | 1963×1000 | 95.2% | 95.1% | 95.1% | 380/1000 (38%) | 269/1000 (27%) | 240× |
+| Madelon (500 features) | 2600×500 | 57.8% | 55.6% | 57.9% | 181/500 (36%) | 313/500 (63%) | 116× |
+| Arrhythmia (279 features) | 452×279 | 75.7% | 73.5% | 75.7% | 108/279 (39%) | 35/279 (13%) | 151× |
+| Colon Cancer (2000 genes) | 62×2000 | 73.7% | 73.7% | 73.7% | 629/2000 (31%) | 6/2000 (0.3%) | 101× |
+| Synthetic (20/300 informative) | 500×300 | 90.0% | 84.7% | 94.7% | 91/300 (30%) | 19/300 (6%) | 354× |
 
-**Summary**: Mean accuracy difference: +1.7% (ARD vs LogReg), Mean overhead: 18.7×, Mean feature selection: 20% of features
+**Summary**: Mean accuracy difference: +1.6% (ARD vs LogReg), Mean overhead: 180×, Mean feature selection: 35.4% of features
 
-**Key insight**: ARD consistently selects ~20% of features across diverse high-dimensional datasets. It shows particular strength in text classification (20 Newsgroups) and gene expression data (Colon Cancer) where many features are irrelevant.
+**Key insight**: ARD provides adaptive feature selection, selecting 30-40% of features on most datasets. The selection is data-driven and varies by dataset complexity. ARD shows particular strength on challenging datasets like Madelon and Arrhythmia where it outperforms standard logistic regression.
 
 **Datasets used**: MNIST digits, 20 Newsgroups text classification, Madelon (designed for feature selection), Arrhythmia medical diagnosis, Colon Cancer gene expression, and controlled synthetic data.
 
 ### Synthetic Dataset Validation
 
-Controlled experiments on synthetic data with known ground truth:
+Controlled experiments on synthetic data with known ground truth demonstrate ARD's adaptive feature selection:
 
-| Dataset Type | True Informative | ARD Selected | L1 Selected* | ARD Accuracy | L1 Accuracy |
+| Dataset Configuration | True Informative | ARD Selected | L1 Selected* | ARD Accuracy | L1 Accuracy |
 |-------------|------------------|--------------|-------------|--------------|-------------|
-| Synthetic 1 | 5/20 | 5/20 | 7/20 | 85% | 87% |
-| Synthetic 2 | 10/50 | 11/50 | 15/50 | 78% | 79% |
-| Synthetic 3 | 15/100 | 16/100 | 22/100 | 82% | 83% |
+| 300 samples, 20 features, 5 informative | 5/20 | 7/20 (35%) | 8/20 (40%) | 85% | 87% |
+| 500 samples, 50 features, 10 informative | 10/50 | 18/50 (36%) | 15/50 (30%) | 78% | 79% |
+| 1000 samples, 100 features, 15 informative | 15/100 | 23/100 (23%) | 62/100 (62%) | 76% | 77% |
 
 *L1 results with optimally tuned C parameter
+
+**Key insight**: ARD typically selects 23-36% of features, adapting to the signal-to-noise ratio of each dataset. Unlike the artificial 20% claim in previous versions, ARD's selection is truly data-driven and varies appropriately with dataset characteristics.
 
 ### Computational Trade-offs
 
@@ -164,12 +166,12 @@ ARD provides automatic feature selection at the cost of increased computation ti
 
 | Dataset Size | ARD Time | Logistic Regression | Overhead | Benefit |
 |--------------|----------|-------------------|----------|---------|
-| 100×10 | 0.01s | 0.001s | 10× | Auto feature selection |
+| 100×10 | 0.05s | 0.002s | 25× | Auto feature selection |
 | 1,000×100 | 0.3s | 0.02s | 15× | + Uncertainty estimates |
-| 10,000×500 | 6.1s | 0.5s | 12× | + No hyperparameter tuning |
-| 50,000×1000 | 45s | 4s | 11× | + Bayesian framework |
+| 5,000×100 | 0.7s | 0.004s | 175× | + No hyperparameter tuning |
+| 10,000×200 | 2.1s | 0.1s | 21× | + Bayesian framework |
 
-**Key insight**: ARD trades computational efficiency for automatic feature selection and uncertainty quantification, making it valuable when interpretability and avoiding hyperparameter tuning are priorities.
+**Key insight**: ARD trades computational efficiency for automatic feature selection and uncertainty quantification. Overhead varies from 15× to 175× depending on dataset characteristics, making it valuable when interpretability and avoiding hyperparameter tuning are priorities over raw speed.
 
 ## 📊 Performance Overview
 
@@ -189,7 +191,7 @@ ARD maintains reasonable computational overhead while providing feature selectio
 
 ![Scalability Comparison](docs/plots/scalability.png)
 
-*Training time comparison shows ARD has 5-64× overhead compared to standard logistic regression, with significantly higher overhead for very high-dimensional text data. The trade-off provides automatic feature selection without manual hyperparameter optimization.*
+*Training time comparison shows ARD has 15-354× overhead compared to standard logistic regression, with significantly higher overhead for very high-dimensional text data. The trade-off provides automatic feature selection without manual hyperparameter optimization.*
 
 ### Sparsity vs L1 Regularization
 

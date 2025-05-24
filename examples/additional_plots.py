@@ -223,11 +223,17 @@ def plot_feature_selection_process():
     cbar = plt.colorbar(im, ax=ax)
     cbar.set_label("Feature Importance (1/α)", rotation=270, labelpad=20)
 
-    # Highlight final important features
-    final_importances = importance_evolution[-1]
-    important_features = np.where(
-        final_importances > np.percentile(final_importances, 80)
-    )[0]
+    # Highlight final important features using proper ARD mechanism
+    final_ard = ARDClassifier(
+        learning_rate=0.02, max_iter=200, verbose=0, random_state=42
+    )
+    final_ard.fit(X, y)
+
+    # Use proper alpha-based feature selection
+    mean_alpha = np.mean(final_ard.alpha_)
+    std_alpha = np.std(final_ard.alpha_)
+    alpha_threshold = mean_alpha - 0.5 * std_alpha
+    important_features = np.where(final_ard.alpha_ < alpha_threshold)[0]
 
     for feature_idx in important_features:
         ax.axhline(y=feature_idx, color="red", alpha=0.3, linewidth=2)

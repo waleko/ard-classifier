@@ -65,10 +65,16 @@ def plot_feature_importance_demo():
     ax1.set_xticks(range(len(importances)))
     ax1.set_xticklabels([str(i) for i in indices], rotation=45)
 
-    # Add threshold line
-    threshold = np.percentile(importances, 80)
+    # Add threshold line based on ARD mechanism
+    # ARD assigns high alpha to irrelevant features, low alpha to relevant features
+    mean_alpha = np.mean(ard.alpha_)
+    std_alpha = np.std(ard.alpha_)
+    alpha_threshold = mean_alpha - 0.5 * std_alpha
+    # Convert alpha threshold to importance threshold (importance = 1/alpha)
+    importance_threshold = 1.0 / alpha_threshold if alpha_threshold > 0 else np.max(importances)
+
     ax1.axhline(
-        y=threshold, color="red", linestyle="--", label="80th percentile threshold"
+        y=importance_threshold, color="red", linestyle="--", label="ARD selection threshold"
     )
     ax1.legend()
 
@@ -230,10 +236,15 @@ def plot_sparsity_comparison():
     fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(12, 8))
 
     # Plot 1: ARD coefficients with importance
-    importance_threshold = np.percentile(ard.feature_importances_, 80)
+    # Use proper ARD feature selection mechanism
+    mean_alpha = np.mean(ard.alpha_)
+    std_alpha = np.std(ard.alpha_)
+    alpha_threshold = mean_alpha - 0.5 * std_alpha
+    selected_features = ard.alpha_ < alpha_threshold
+
     colors = [
-        "green" if imp > importance_threshold else "lightgray"
-        for imp in ard.feature_importances_
+        "green" if selected_features[i] else "lightgray"
+        for i in range(len(ard.coef_))
     ]
 
     ax1.bar(range(len(ard.coef_)), ard.coef_, color=colors, alpha=0.8)

@@ -20,7 +20,7 @@ from sklearn.preprocessing import StandardScaler
 
 # Import from parent directory
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
-from ard_classifier import ARDClassifier
+from ard_classifier import ARDClassifier  # noqa: E402
 
 
 def evaluate_dataset(X, y, dataset_name, test_size=0.3, random_state=42):
@@ -53,9 +53,13 @@ def evaluate_dataset(X, y, dataset_name, test_size=0.3, random_state=42):
     ard_prec = precision_score(y_test, ard_pred, average="weighted")
     ard_recall = recall_score(y_test, ard_pred, average="weighted")
 
-    # Count selected features (importance > threshold)
-    threshold = np.percentile(ard.feature_importances_, 80)
-    ard_selected = np.sum(ard.feature_importances_ > threshold)
+    # Count selected features using proper ARD mechanism
+    # ARD assigns high alpha to irrelevant features, low alpha to relevant features
+    # Use adaptive threshold based on alpha distribution
+    mean_alpha = np.mean(ard.alpha_)
+    std_alpha = np.std(ard.alpha_)
+    alpha_threshold = mean_alpha - 0.5 * std_alpha  # Features with notably low alpha
+    ard_selected: int = np.sum(ard.alpha_ < alpha_threshold)
 
     # Train Logistic Regression
     print("  Training Logistic Regression...")
@@ -86,7 +90,7 @@ def evaluate_dataset(X, y, dataset_name, test_size=0.3, random_state=42):
     # Count non-zero coefficients in L1
     if hasattr(lr_l1, "coef_"):
         if lr_l1.coef_.ndim == 1:
-            l1_selected = np.sum(np.abs(lr_l1.coef_) > 1e-6)
+            l1_selected: int = np.sum(np.abs(lr_l1.coef_) > 1e-6)
         else:
             l1_selected = np.sum(np.abs(lr_l1.coef_[0]) > 1e-6)
     else:
