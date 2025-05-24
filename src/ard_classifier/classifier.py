@@ -1,3 +1,5 @@
+from typing import Optional
+
 import numpy as np
 from scipy.special import expit
 from sklearn.base import BaseEstimator, ClassifierMixin
@@ -49,7 +51,7 @@ class ARDClassifier(BaseEstimator, ClassifierMixin):
         max_iter=1000,
         tol=1e-4,
         verbose=0,
-        random_state=None,
+        random_state: Optional[int] = None,
     ):
         self.alpha_init = alpha_init
         self.lambda_init = lambda_init
@@ -168,7 +170,7 @@ class ARDClassifier(BaseEstimator, ClassifierMixin):
         # Clip alpha to reasonable values
         self.alpha_ = np.clip(self.alpha_, 1e-10, 1e10)
 
-    def fit(self, X, y):
+    def fit(self, X: np.ndarray, y: np.ndarray) -> "ARDClassifier":
         """
         Fit the ARD classifier using ELBO maximization with variational inference
 
@@ -307,7 +309,7 @@ class ARDClassifier(BaseEstimator, ClassifierMixin):
 
         return self
 
-    def predict_proba(self, X):
+    def predict_proba(self, X: np.ndarray) -> np.ndarray:
         """
         Predict class probabilities using the mean of the variational distribution
 
@@ -335,7 +337,7 @@ class ARDClassifier(BaseEstimator, ClassifierMixin):
 
         return proba
 
-    def predict(self, X):
+    def predict(self, X: np.ndarray) -> np.ndarray:
         """
         Predict class labels
 
@@ -376,7 +378,7 @@ class ARDClassifier(BaseEstimator, ClassifierMixin):
         return accuracy_score(y, self.predict(X), sample_weight=sample_weight)
 
     @property
-    def feature_importances_(self):
+    def feature_importances_(self) -> np.ndarray:
         """
         Get feature importances based on inverse alpha values
 
@@ -385,7 +387,7 @@ class ARDClassifier(BaseEstimator, ClassifierMixin):
         check_is_fitted(self)
         return 1.0 / (self.alpha_ + 1e-10)
 
-    def get_posterior_variance(self):
+    def get_posterior_variance(self) -> np.ndarray:
         """
         Get the posterior variance for each coefficient
 

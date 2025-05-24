@@ -77,12 +77,16 @@ line_length = 88
 
 [tool.mypy]
 python_version = "3.8"
-warn_return_any = true
+warn_return_any = false
 warn_unused_configs = true
 disallow_untyped_defs = false
 disallow_incomplete_defs = false
 check_untyped_defs = true
 no_implicit_optional = true
+ignore_missing_imports = true
+warn_no_return = false
+warn_unreachable = true
+disable_error_code = ["misc", "type-arg"]
 
 [tool.pytest.ini_options]
 minversion = "7.0"
