@@ -124,7 +124,6 @@ class ARDClassifier(BaseEstimator, ClassifierMixin):
         """
         Compute gradients of ELBO w.r.t. mu and log_sigma2 using reparameterization trick
         """
-        n_samples = X.shape[0]
         sigma2 = np.exp(log_sigma2)
         sigma = np.sqrt(sigma2)
 

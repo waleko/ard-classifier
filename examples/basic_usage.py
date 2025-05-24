@@ -68,7 +68,7 @@ def main():
     top_features = np.argsort(importances)[-10:][::-1]
 
     print("   Top 10 most important features:")
-    for i, idx in enumerate(top_features):
+    for idx in top_features:
         print(
             f"   Feature {idx:2d}: importance={importances[idx]:.4f}, "
             f"α={clf.alpha_[idx]:.2e}"
@@ -84,7 +84,7 @@ def main():
     print("\n5. Uncertainty Quantification:")
     variances = clf.get_posterior_variance()
     print("   Posterior std for top 5 features:")
-    for i, idx in enumerate(top_features[:5]):
+    for idx in top_features[:5]:
         print(f"   Feature {idx:2d}: σ={np.sqrt(variances[idx]):.4f}")
 
     # Make predictions with probabilities
@@ -103,4 +103,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main() 
+    main()

@@ -118,18 +118,18 @@ class TestARDClassifier:
     def test_feature_selection(self):
         """Test ARD's ability to identify relevant features"""
         # Create data where only first 3 features are relevant
-        np.random.seed(42)
+        rng = np.random.default_rng(42)
         n_samples = 200
         n_features = 10
         n_informative = 3
 
-        X_informative = np.random.randn(n_samples, n_informative)
-        X_noise = np.random.randn(n_samples, n_features - n_informative) * 0.1
+        X_informative = rng.standard_normal((n_samples, n_informative))
+        X_noise = rng.standard_normal((n_samples, n_features - n_informative)) * 0.1
         X = np.hstack([X_informative, X_noise])
 
         # Create target based only on informative features
         w_true = np.array([2.0, -1.5, 1.0])
-        y_continuous = X_informative @ w_true + np.random.randn(n_samples) * 0.1
+        y_continuous = X_informative @ w_true + rng.standard_normal(n_samples) * 0.1
         y = (y_continuous > 0).astype(int)
 
         # Train classifier
@@ -192,8 +192,9 @@ class TestARDClassifier:
     @pytest.mark.skip(reason="Multi-class not yet supported")
     def test_multiclass_error(self, classifier):
         """Test that multi-class classification raises appropriate error"""
-        X = np.random.randn(100, 10)
-        y = np.random.randint(0, 3, 100)  # 3 classes
+        rng = np.random.default_rng(42)
+        X = rng.standard_normal((100, 10))
+        y = rng.integers(0, 3, 100)  # 3 classes
 
         with pytest.raises(ValueError, match="binary classification"):
             classifier.fit(X, y)
