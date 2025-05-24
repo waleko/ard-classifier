@@ -163,5 +163,10 @@ outputs/
 models/
 checkpoints/
 
+# Allow documentation plots
+!docs/plots/*.png
+!docs/plots/*.jpg
+!docs/plots/*.jpeg
+
 # Evaluation results
 *.csv 
